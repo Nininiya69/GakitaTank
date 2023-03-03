@@ -1,56 +1,61 @@
-package gakita;
+package GakitaTank;
+
 import robocode.*;
-//import java.awt.Color;
+import java.awt.Color;
+import robocode.util.Utils;
 
-// API help : https://robocode.sourceforge.io/docs/robocode/robocode/Robot.html
+public class GakitaTank extends AdvancedRobot {
+    int moveDirection = 1; // variável para armazenar a direção do movimento
+    String targetName = ""; // variável para armazenar o nome do robô inimigo a ser mirado
+    double gunAdjust; // variável para armazenar o ajuste do canhão
 
-/**
- * GakitaTank - a robot by Nininiya69
- */
-public class GakitaTank extends Robot
-{
-	/**
-	 * run: GakitaTank's default behavior
-	 */
-	public void run() {
-		// Initialization of the robot should be put here
+    public void run() {
+        setColors(new Color(128,0,128), Color.black, Color.white); // define as cores do tanque (roxo, preto, branco)
+        setAdjustGunForRobotTurn(true); // ajusta o canhão independentemente da rotação do tanque
+        setAdjustRadarForGunTurn(true); // ajusta o radar independentemente da rotação do canhão
 
-		// After trying out your robot, try uncommenting the import at the top,
-		// and the next line:
+        while(true) {
+            // verifica se existe um alvo definido
+            if (!targetName.isEmpty()) {
+                // obtém informações do alvo
+                ScannedRobotEvent target = getTarget(targetName);
 
-		// setColors(Color.red,Color.blue,Color.green); // body,gun,radar
+                // se o alvo for encontrado, ajusta o canhão para mirar nele
+                if (target != null) {
+                    gunAdjust = Utils.normalRelativeAngleDegrees(target.getBearing() + getHeading() - getGunHeading());
+                    setTurnGunLeft(gunAdjust);
+                    execute();
 
-		// Robot main loop
-		while(true) {
-			// Replace the next 4 lines with any behavior you would like
-			ahead(100);
-			turnGunRight(360);
-			back(100);
-			turnGunRight(360);
-		}
-	}
+                    // atira no alvo
+                    fire(1);
+                }
+                // se o alvo não for encontrado, remove o nome do alvo para procurar um novo alvo
+                else {
+                    targetName = "";
+                }
+            }
+            // se não houver alvo definido, gira a mira no sentido anti-horário
+            else {
+                setTurnGunLeft(10);
+                execute();
+            }
+        }
+    }
 
-	/**
-	 * onScannedRobot: What to do when you see another robot
-	 */
-	public void onScannedRobot(ScannedRobotEvent e) {
-		// Replace the next line with any behavior you would like
-		fire(1);
-	}
+    public void onScannedRobot(ScannedRobotEvent e) {
+        // verifica se o robô escaneado é um inimigo
+        if (e.isMyEnemy()) {
+            targetName = e.getName();
+        }
+    }
 
-	/**
-	 * onHitByBullet: What to do when you're hit by a bullet
-	 */
-	public void onHitByBullet(HitByBulletEvent e) {
-		// Replace the next line with any behavior you would like
-		back(10);
-	}
-	
-	/**
-	 * onHitWall: What to do when you hit a wall
-	 */
-	public void onHitWall(HitWallEvent e) {
-		// Replace the next line with any behavior you would like
-		back(20);
-	}	
+    // método auxiliar para obter o objeto ScannedRobotEvent do alvo
+    private ScannedRobotEvent getTarget(String name) {
+        for (ScannedRobotEvent e : getScannedRobots()) {
+            if (e.getName().equals(name)) {
+                return e;
+            }
+        }
+        return null;
+    }
 }
